@@ -2,12 +2,9 @@ from flask import Flask, render_template, request
 from flask_socketio import SocketIO, join_room, emit
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm.exc import NoResultFound
-from sqlalchemy.exc import IntegrityError
+import random
+import gevent
 import os
-
-# Xóa db cũ nếu cần thiết (optional)
-# if os.path.exists("tic_tac_toe.db"):
-#     os.remove("tic_tac_toe.db")
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
@@ -15,7 +12,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///tic_tac_toe.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
-socketio = SocketIO(app, cors_allowed_origins="*") # Cho phép kết nối thoải mái hơn
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='gevent')
 
 # --- MODELS ---
 class Room(db.Model):
@@ -23,8 +20,8 @@ class Room(db.Model):
     size = db.Column(db.Integer, nullable=False)
     board = db.Column(db.Text, nullable=False)
     turn = db.Column(db.Integer, default=1)
-    player1_id = db.Column(db.String(80), nullable=True) # Lưu SID socket
-    player2_id = db.Column(db.String(80), nullable=True) # Lưu SID socket
+    player1_id = db.Column(db.String(80), nullable=True)
+    player2_id = db.Column(db.String(80), nullable=True)
     player1_score = db.Column(db.Integer, default=0)
     player2_score = db.Column(db.Integer, default=0)
     password = db.Column(db.String(100), nullable=True)
@@ -38,24 +35,31 @@ class Player(db.Model):
 with app.app_context():
     db.create_all()
 
-# --- HELPERS ---
+# --- HELPER FUNCTIONS ---
 def get_room_names(room_id):
-    """Lấy tên hiển thị cho frontend"""
-    p1_entry = Player.query.filter_by(room_id=room_id, player_number=1).first()
-    p2_entry = Player.query.filter_by(room_id=room_id, player_number=2).first()
+    p1 = Player.query.filter_by(room_id=room_id, player_number=1).first()
+    p2 = Player.query.filter_by(room_id=room_id, player_number=2).first()
     return {
-        1: p1_entry.nickname if p1_entry else "Waiting...",
-        2: p2_entry.nickname if p2_entry else "Waiting..."
+        1: p1.nickname if p1 else "Waiting...",
+        2: p2.nickname if p2 else "Waiting..."
     }
 
 def check_winner(board, size):
-    # Logic check win (giữ nguyên)
+    # Logic thắng thua
     for i in range(size):
         if all(board[i*size + j] == board[i*size] and board[i*size] != ' ' for j in range(size)): return True
         if all(board[j*size + i] == board[i] and board[i] != ' ' for j in range(size)): return True
     if all(board[i*size + i] == board[0] and board[0] != ' ' for i in range(size)): return True
     if all(board[i*size + (size-i-1)] == board[size-1] and board[size-1] != ' ' for i in range(size)): return True
     return False
+
+def get_bot_move(board_str, size):
+    """Bot ngẫu nhiên (Dễ)"""
+    board_list = list(board_str)
+    empty_indices = [i for i, x in enumerate(board_list) if x == ' ']
+    if not empty_indices:
+        return None
+    return random.choice(empty_indices)
 
 # --- ROUTES ---
 @app.route('/')
@@ -80,7 +84,7 @@ def join_room_view(room_id):
         return render_template('room.html', room_id=room_id, size=room.size)
     return "Error: Room not found or wrong password", 404
 
-# --- SOCKET EVENTS (ĐÃ SỬA LỖI LOGIC) ---
+# --- SOCKET EVENTS ---
 
 @socketio.on('join')
 def handle_join(data):
@@ -89,26 +93,27 @@ def handle_join(data):
     sid = request.sid
     join_room(room_id)
 
-    print(f"DEBUG: User {nickname} ({sid}) joining room {room_id}")
-
     room = db.session.get(Room, room_id)
-    if not room:
-        return
+    if not room: return
 
-    # Kiểm tra xem player này đã có trong DB chưa (trường hợp reconnect)
+    # Check reconnect
     player = Player.query.filter_by(sid=sid).first()
     
     if not player:
-        # Nếu chưa có, tìm slot trống
+        # Tìm slot trống
         player_num = 0
         if not room.player1_id:
             player_num = 1
             room.player1_id = sid
         elif not room.player2_id:
-            player_num = 2
-            room.player2_id = sid
-        else:
-            # Phòng đã đầy -> Spectator
+            # Nếu là phòng BOT thì slot 2 đã dành cho BOT rồi, người vào sau sẽ là Spectator
+            if "bot" in room_id:
+                 pass # Spectator logic below
+            else:
+                player_num = 2
+                room.player2_id = sid
+        
+        if player_num == 0:
             names = get_room_names(room_id)
             emit('spectator', {'size': room.size, 'player_names': names})
             return
@@ -118,20 +123,14 @@ def handle_join(data):
             new_player = Player(sid=sid, room_id=room_id, player_number=player_num, nickname=nickname)
             db.session.add(new_player)
             db.session.commit()
-            
-            # Gửi thông tin cá nhân cho người chơi
             emit('set_player', player_num)
-            
-        except Exception as e:
-            print(f"Error adding player: {e}")
+        except:
             db.session.rollback()
             return
     
-    # Cập nhật lại UI cho TẤT CẢ mọi người
     names = get_room_names(room_id)
     socketio.emit('update_names', names, room=room_id)
     
-    # Gửi trạng thái bàn cờ hiện tại
     emit('room_joined', {
         'room_id': room_id,
         'board': room.board,
@@ -139,8 +138,6 @@ def handle_join(data):
         'turn': room.turn,
         'player_names': names
     })
-    print(f"DEBUG: Join success. Player {player.player_number if player else 'New'} - Names: {names}")
-
 
 @socketio.on('make_move')
 def handle_move(data):
@@ -149,52 +146,69 @@ def handle_move(data):
     room = Room.query.get(room_id)
     player = Player.query.get(request.sid)
 
-    # Validate: Phải là player, đúng lượt, ô trống
+    # 1. NGƯỜI CHƠI ĐÁNH
     if player and room and room.turn == player.player_number:
         board_list = list(room.board)
         if board_list[move] == ' ':
-            # Cập nhật bàn cờ
             symbol = 'X' if player.player_number == 1 else 'O'
             board_list[move] = symbol
             room.board = ''.join(board_list)
             
-            # Check win/draw
             winner = 0
             game_ended = False
+            
+            # Check Win
             if check_winner(board_list, room.size):
                 winner = player.player_number
                 if winner == 1: room.player1_score += 1
                 else: room.player2_score += 1
                 game_ended = True
-            elif ' ' not in board_list:
-                winner = 0 # Draw
-                game_ended = True
-            
-            # Gửi nước đi
-            emit('move_made', {'move': move, 'player': player.player_number}, room=room_id)
-            
-            if game_ended:
+                emit('move_made', {'move': move, 'player': player.player_number}, room=room_id)
                 emit('game_over', {'winner': winner}, room=room_id)
+            
+            # Check Draw
+            elif ' ' not in board_list:
+                game_ended = True
+                emit('move_made', {'move': move, 'player': player.player_number}, room=room_id)
+                emit('game_over', {'winner': 0}, room=room_id)
+            
+            # Next Turn
             else:
-                # Đổi lượt
+                emit('move_made', {'move': move, 'player': player.player_number}, room=room_id)
                 room.turn = 2 if player.player_number == 1 else 1
             
             db.session.commit()
 
+            # 2. BOT ĐÁNH (Nếu là phòng Bot và chưa hết game)
+            is_bot_room = "bot" in room_id
+            if not game_ended and is_bot_room and room.turn == 2:
+                gevent.sleep(0.5) # Bot suy nghĩ
+                
+                bot_move = get_bot_move(room.board, room.size)
+                if bot_move is not None:
+                    board_list = list(room.board)
+                    board_list[bot_move] = 'O'
+                    room.board = ''.join(board_list)
+                    
+                    if check_winner(board_list, room.size):
+                        room.player2_score += 1
+                        emit('move_made', {'move': bot_move, 'player': 2}, room=room_id)
+                        emit('game_over', {'winner': 2}, room=room_id)
+                    elif ' ' not in board_list:
+                        emit('move_made', {'move': bot_move, 'player': 2}, room=room_id)
+                        emit('game_over', {'winner': 0}, room=room_id)
+                    else:
+                        emit('move_made', {'move': bot_move, 'player': 2}, room=room_id)
+                        room.turn = 1 # Trả lượt người
+                    
+                    db.session.commit()
+
 @socketio.on('chat_message')
 def handle_chat(data):
     room_id = data['room_id']
-    msg = data['message']
     player = Player.query.get(request.sid)
-    
     if player:
-        # Gửi tin nhắn ngay lập tức (không cần lưu DB để test nhanh)
-        emit('receive_message', {
-            'player': player.player_number,
-            'message': msg
-        }, room=room_id)
-    else:
-        print("DEBUG: Chat failed - Player not found in DB")
+        emit('receive_message', {'player': player.player_number, 'message': data['message']}, room=room_id)
 
 @socketio.on('rematch')
 def handle_rematch(data):
@@ -207,31 +221,22 @@ def handle_rematch(data):
 
 @socketio.on('disconnect')
 def handle_disconnect():
-    sid = request.sid
-    player = Player.query.get(sid)
+    player = Player.query.get(request.sid)
     if player:
-        print(f"DEBUG: Player {player.nickname} disconnected")
         room = Room.query.get(player.room_id)
-        
-        # Xóa khỏi slot trong Room
         if room:
             if player.player_number == 1: room.player1_id = None
             elif player.player_number == 2: room.player2_id = None
-            
-            # Xóa player khỏi DB
             db.session.delete(player)
             db.session.commit()
             
-            # Nếu phòng trống thì xóa phòng luôn để tránh rác
             if not room.player1_id and not room.player2_id:
                 db.session.delete(room)
                 db.session.commit()
             else:
-                # Báo cho người còn lại biết
-                emit('player_disconnected', {'player_number': player.player_number}, room=room.id)
                 names = get_room_names(room.id)
                 socketio.emit('update_names', names, room=room.id)
+                emit('player_disconnected', {}, room=room.id)
 
 if __name__ == '__main__':
-    # Dùng allow_unsafe_werkzeug=True để chạy môi trường dev mượt hơn
     socketio.run(app, debug=True, allow_unsafe_werkzeug=True)
