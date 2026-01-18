@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>XO Arena | Group 15</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;700;900&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: "Outfit", sans-serif;
+      }
+      .hero-pattern {
+        background-color: #f8fafc;
+        background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+        background-size: 24px 24px;
+      }
+    </style>
+  </head>
+
+  <body
+    class="hero-pattern min-h-screen flex flex-col items-center justify-center p-4 text-slate-800"
+  >
+    <div class="text-center mb-8 animate-fade-in-down">
+      <div class="inline-block p-3 rounded-2xl bg-white shadow-lg mb-4">
+        <div class="grid grid-cols-2 gap-1">
+          <div class="w-4 h-4 bg-indigo-500 rounded-full"></div>
+          <div class="w-4 h-4 bg-orange-500 rounded-sm"></div>
+          <div class="w-4 h-4 bg-orange-500 rounded-sm"></div>
+          <div class="w-4 h-4 bg-indigo-500 rounded-full"></div>
+        </div>
+      </div>
+      <h1
+        class="text-5xl md:text-6xl font-black tracking-tighter text-slate-900 mb-2"
+      >
+        XO ARENA
+      </h1>
+      <p class="text-slate-500 font-medium">
+        Project by
+        <span
+          class="text-indigo-600 font-bold bg-indigo-50 px-2 py-1 rounded border border-indigo-100"
+          >Group 15</span
+        >
+      </p>
+    </div>
+
+    <div
+      class="w-full max-w-5xl bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-100 flex flex-col md:flex-row"
+    >
+      <div
+        class="flex-1 p-8 md:p-10 border-b md:border-b-0 md:border-r border-slate-100 bg-gradient-to-br from-indigo-50/50 to-white"
+      >
+        <h2
+          class="text-xl font-bold text-indigo-900 mb-5 flex items-center gap-2"
+        >
+          <span
+            class="bg-indigo-600 text-white w-8 h-8 rounded-lg flex items-center justify-center shadow-indigo-200 shadow-md"
+          >
+            <svg
+              class="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+              ></path>
+            </svg>
+          </span>
+          Create New Room
+        </h2>
+
+        <form id="create-room-form" class="space-y-4">
+          <div class="space-y-1">
+            <label
+              class="text-xs font-bold text-slate-400 uppercase tracking-wider"
+              >Your Nickname</label
+            >
+            <input
+              type="text"
+              id="create_nickname"
+              placeholder="Ex: DragonSlayer"
+              required
+              maxlength="10"
+              class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition font-semibold text-slate-700 placeholder:font-normal"
+            />
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div class="space-y-1">
+              <label
+                class="text-xs font-bold text-slate-400 uppercase tracking-wider"
+                >Room ID</label
+              >
+              <input
+                type="text"
+                id="create_room_id"
+                placeholder="Room Name"
+                required
+                class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 outline-none transition font-semibold text-slate-700"
+              />
+            </div>
+            <div class="space-y-1">
+              <label
+                class="text-xs font-bold text-slate-400 uppercase tracking-wider"
+                >Password</label
+              >
+              <input
+                type="password"
+                id="create_password"
+                placeholder="Key"
+                required
+                class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 outline-none transition font-semibold text-slate-700"
+              />
+            </div>
+          </div>
+
+          <div class="space-y-1">
+            <label
+              class="text-xs font-bold text-slate-400 uppercase tracking-wider"
+              >Grid Size</label
+            >
+            <select
+              id="create_board_size"
+              class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 outline-none transition font-semibold text-slate-700 cursor-pointer"
+            >
+              <option value="3">3 x 3 (Classic)</option>
+              <option value="4">4 x 4 (Advanced)</option>
+              <option value="5">5 x 5 (Expert)</option>
+            </select>
+          </div>
+
+          <button
+            type="submit"
+            class="w-full mt-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-indigo-200 transform transition active:scale-95 flex justify-center items-center gap-2"
+          >
+            Create & Play
+          </button>
+        </form>
+      </div>
+
+      <div
+        class="flex-1 p-8 md:p-10 bg-gradient-to-br from-orange-50/50 to-white"
+      >
+        <h2
+          class="text-xl font-bold text-orange-900 mb-5 flex items-center gap-2"
+        >
+          <span
+            class="bg-orange-500 text-white w-8 h-8 rounded-lg flex items-center justify-center shadow-orange-200 shadow-md"
+          >
+            <svg
+              class="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"
+              ></path>
+            </svg>
+          </span>
+          Join Battle
+        </h2>
+
+        <form id="join-room-form" class="space-y-4">
+          <div class="space-y-1">
+            <label
+              class="text-xs font-bold text-slate-400 uppercase tracking-wider"
+              >Your Nickname</label
+            >
+            <input
+              type="text"
+              id="join_nickname"
+              placeholder="Ex: ProGamer"
+              required
+              maxlength="10"
+              class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition font-semibold text-slate-700 placeholder:font-normal"
+            />
+          </div>
+
+          <div class="space-y-1">
+            <label
+              class="text-xs font-bold text-slate-400 uppercase tracking-wider"
+              >Room ID</label
+            >
+            <input
+              type="text"
+              id="join_room_id"
+              placeholder="Enter Room ID"
+              required
+              class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-orange-500 outline-none transition font-semibold text-slate-700"
+            />
+          </div>
+
+          <div class="space-y-1">
+            <label
+              class="text-xs font-bold text-slate-400 uppercase tracking-wider"
+              >Password</label
+            >
+            <input
+              type="password"
+              id="join_password"
+              placeholder="Enter Password"
+              required
+              class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-orange-500 outline-none transition font-semibold text-slate-700"
+            />
+          </div>
+
+          <div class="md:h-[50px] hidden md:block"></div>
+
+          <button
+            type="submit"
+            class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-orange-200 transform transition active:scale-95 flex justify-center items-center gap-2"
+          >
+            Join Game
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <footer class="mt-8 text-slate-400 text-sm font-medium">
+      © 2024 Group 15 Game Studio. All rights reserved.
+    </footer>
+
+    <script>
+      // Cập nhật Logic: Lấy thêm nickname và truyền vào URL
+      document
+        .getElementById("create-room-form")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          const roomId = document.getElementById("create_room_id").value;
+          const password = document.getElementById("create_password").value;
+          const boardSize = document.getElementById("create_board_size").value;
+          const nickname = document.getElementById("create_nickname").value; // Lấy nickname
+
+          if (roomId && password && nickname) {
+            // Encode nickname để tránh lỗi ký tự đặc biệt
+            window.location.href = `/room/${roomId}/${boardSize}?password=${encodeURIComponent(password)}&nickname=${encodeURIComponent(nickname)}`;
+          }
+        });
+
+      document
+        .getElementById("join-room-form")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          const roomId = document.getElementById("join_room_id").value;
+          const password = document.getElementById("join_password").value;
+          const nickname = document.getElementById("join_nickname").value; // Lấy nickname
+
+          if (roomId && password && nickname) {
+            window.location.href = `/join/${roomId}?password=${encodeURIComponent(password)}&nickname=${encodeURIComponent(nickname)}`;
+          }
+        });
+    </script>
+  </body>
+</html>

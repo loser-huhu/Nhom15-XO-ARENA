@@ -1,0 +1,7 @@
+Flask
+Flask-SocketIO
+Flask-SQLAlchemy
+gevent
+gevent-websocket
+gunicorn
+simple-websocket

@@ -1,0 +1,581 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Room {{ room_id }} | XO Arena</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: "Outfit", sans-serif;
+      }
+
+      .grid-board {
+        display: grid;
+        gap: 12px;
+        width: 100%;
+        max-width: 420px;
+        aspect-ratio: 1;
+        margin: 0 auto;
+      }
+
+      .cell {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        font-weight: 900;
+        background-color: #ffffff;
+        border-radius: 14px;
+        cursor: pointer;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        border: 2px solid #f1f5f9;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        color: #334155;
+      }
+
+      .cell:hover:not(.disabled) {
+        transform: translateY(-4px);
+        border-color: #cbd5e1;
+      }
+
+      .cell:active:not(.disabled) {
+        transform: scale(0.95);
+      }
+
+      .cell.x-mark {
+        color: #4f46e5;
+        background-color: #eef2ff;
+        border-color: #c7d2fe;
+      }
+      .cell.o-mark {
+        color: #ea580c;
+        background-color: #fff7ed;
+        border-color: #fed7aa;
+      }
+      .disabled {
+        pointer-events: none;
+      }
+
+      /* Chat scrollbar */
+      .chat-scroll::-webkit-scrollbar {
+        width: 4px;
+      }
+      .chat-scroll::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 2px;
+      }
+
+      /* Animation cho Waiting Screen */
+      @keyframes bounce-slow {
+        0%,
+        100% {
+          transform: translateY(-5%);
+          animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+        }
+        50% {
+          transform: translateY(0);
+          animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+        }
+      }
+      .animate-bounce-slow {
+        animation: bounce-slow 2s infinite;
+      }
+    </style>
+  </head>
+
+  <body
+    class="bg-slate-50 h-screen flex flex-col overflow-hidden text-slate-800"
+  >
+    <div
+      id="identity-bar"
+      class="bg-slate-800 text-white py-3 px-4 shadow-md flex justify-between items-center shrink-0 transition-colors duration-500 z-20"
+    >
+      <div class="flex items-center gap-3">
+        <h1 class="font-black text-lg tracking-tight hidden md:block">
+          XO ARENA
+        </h1>
+        <div class="h-6 w-px bg-white/20 hidden md:block"></div>
+        <span class="text-sm font-medium opacity-90">Room: {{ room_id }}</span>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <span class="text-xs uppercase font-bold opacity-70 hidden md:inline"
+          >Playing as</span
+        >
+        <div
+          id="player-badge"
+          class="flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 backdrop-blur-sm"
+        >
+          <span id="my-nickname-display" class="font-bold text-sm">Guest</span>
+          <span
+            id="my-symbol-display"
+            class="text-xs font-black bg-white text-slate-900 w-5 h-5 flex items-center justify-center rounded-full"
+            >?</span
+          >
+        </div>
+      </div>
+    </div>
+
+    <div class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
+      <div
+        class="flex-1 p-4 flex flex-col items-center justify-center overflow-y-auto relative z-10 bg-slate-50"
+      >
+        <div
+          id="waiting-lobby"
+          class="flex flex-col items-center justify-center text-center p-8 max-w-md w-full animate-fade-in"
+        >
+          <div
+            class="w-20 h-20 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mb-6 animate-bounce-slow shadow-lg shadow-indigo-200"
+          >
+            <svg
+              class="w-10 h-10"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+              ></path>
+            </svg>
+          </div>
+          <h2 class="text-3xl font-black text-slate-800 mb-2">
+            Waiting for Opponent...
+          </h2>
+          <p class="text-slate-500 mb-8">
+            Share the Room ID below with your friend to start the match.
+          </p>
+
+          <div
+            class="bg-white border-2 border-dashed border-indigo-200 rounded-xl p-4 w-full flex items-center justify-between gap-4 mb-6"
+          >
+            <span class="text-xl font-bold text-indigo-900 tracking-wider"
+              >{{ room_id }}</span
+            >
+            <button
+              onclick="navigator.clipboard.writeText('{{ room_id }}'); alert('Copied ID!')"
+              class="text-xs font-bold text-indigo-500 hover:text-indigo-700 uppercase bg-indigo-50 px-3 py-2 rounded-lg transition"
+            >
+              Copy ID
+            </button>
+          </div>
+
+          <div class="flex items-center gap-2 text-sm text-slate-400">
+            <span
+              class="w-2 h-2 bg-yellow-400 rounded-full animate-ping"
+            ></span>
+            Listening for connection...
+          </div>
+        </div>
+
+        <div id="game-area" class="hidden flex-col items-center w-full">
+          <div class="w-full max-w-[420px] mb-6">
+            <div class="flex gap-3 mb-6">
+              <div
+                id="p1-card"
+                class="flex-1 bg-white p-3 rounded-xl shadow-sm border border-slate-100 flex flex-col items-center transition-all duration-300"
+              >
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+                  <span
+                    id="p1-name"
+                    class="text-xs font-bold text-indigo-900 uppercase truncate max-w-[80px]"
+                    >Player 1</span
+                  >
+                </div>
+                <div
+                  class="text-indigo-500 font-black text-lg leading-none mb-1"
+                >
+                  X
+                </div>
+                <span
+                  id="player1-score"
+                  class="text-2xl font-black text-slate-800"
+                  >0</span
+                >
+              </div>
+
+              <div class="flex flex-col justify-center">
+                <span class="text-xs font-black text-slate-300 italic">VS</span>
+              </div>
+
+              <div
+                id="p2-card"
+                class="flex-1 bg-white p-3 rounded-xl shadow-sm border border-slate-100 flex flex-col items-center transition-all duration-300"
+              >
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="w-2 h-2 rounded-full bg-orange-500"></span>
+                  <span
+                    id="p2-name"
+                    class="text-xs font-bold text-orange-900 uppercase truncate max-w-[80px]"
+                    >Player 2</span
+                  >
+                </div>
+                <div
+                  class="text-orange-500 font-black text-lg leading-none mb-1"
+                >
+                  O
+                </div>
+                <span
+                  id="player2-score"
+                  class="text-2xl font-black text-slate-800"
+                  >0</span
+                >
+              </div>
+            </div>
+
+            <div id="status-container" class="text-center h-8">
+              <span
+                id="status"
+                class="inline-block px-4 py-1.5 rounded-full bg-slate-200 text-slate-600 font-bold text-xs shadow-inner transition-all duration-300"
+              >
+                Game Starting...
+              </span>
+            </div>
+          </div>
+
+          <div id="game" class="grid-board"></div>
+
+          <div class="mt-6 flex gap-3 w-full max-w-[420px]">
+            <button
+              id="rematch-button"
+              class="hidden flex-1 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-200 transition"
+            >
+              Rematch
+            </button>
+            <button
+              id="leave-room"
+              class="flex-1 py-3 bg-white hover:bg-red-50 text-red-500 border border-red-100 font-bold rounded-xl shadow-sm transition"
+            >
+              Exit
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="w-full md:w-80 bg-white border-t md:border-t-0 md:border-l border-slate-200 flex flex-col h-[35vh] md:h-auto z-20 shadow-xl"
+      >
+        <div
+          class="p-3 border-b border-slate-100 bg-slate-50 flex justify-between items-center"
+        >
+          <span
+            class="text-xs font-bold text-slate-400 uppercase tracking-wider"
+            >Live Chat</span
+          >
+          <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+        </div>
+
+        <div
+          id="messages"
+          class="flex-1 overflow-y-auto p-4 space-y-3 chat-scroll bg-slate-50/50"
+        >
+          <div class="text-center text-[10px] text-slate-400 my-2">
+            Waiting for players to connect...
+          </div>
+        </div>
+
+        <div class="p-3 bg-white border-t border-slate-100">
+          <div class="flex gap-2">
+            <input
+              type="text"
+              id="chat-message"
+              placeholder="Say something..."
+              class="flex-1 bg-slate-100 border-transparent focus:bg-white focus:ring-2 focus:ring-indigo-100 rounded-lg px-3 py-2 text-sm transition outline-none"
+            />
+            <button
+              id="send-message"
+              class="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-3 transition shadow-md"
+            >
+              ➤
+            </button>
+          </div>
+        </div>
+
+        <div class="p-1 bg-slate-100 text-center border-t border-slate-200">
+          <p
+            class="text-[40px] text-slate-400 font-bold tracking-widest uppercase"
+          >
+            Group 15 System
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script>
+      const socket = io();
+      const roomId = "{{ room_id }}";
+      const urlParams = new URLSearchParams(window.location.search);
+      const myNickname = urlParams.get("nickname") || "Anonymous";
+
+      let playerNumber = 0;
+      let turn = 1;
+      let boardSize = "{{ size }}";
+      let player1Score = 0;
+      let player2Score = 0;
+
+      // DOM Elements
+      const grid = document.getElementById("game");
+      const statusEl = document.getElementById("status");
+      const p1NameEl = document.getElementById("p1-name");
+      const p2NameEl = document.getElementById("p2-name");
+
+      // Khu vực hiển thị (Lobby vs Game)
+      const lobbyEl = document.getElementById("waiting-lobby");
+      const gameAreaEl = document.getElementById("game-area");
+
+      // --- Socket Logic ---
+
+      socket.emit("join", {
+        room_id: roomId,
+        size: boardSize,
+        nickname: myNickname,
+      });
+
+      socket.on("set_player", (number) => {
+        playerNumber = number;
+        document.getElementById("my-nickname-display").textContent = myNickname;
+        document.getElementById("my-symbol-display").textContent =
+          number === 1 ? "X" : number === 2 ? "O" : "👁️";
+
+        const identityBar = document.getElementById("identity-bar");
+        if (number === 1) identityBar.classList.add("bg-indigo-600");
+        else if (number === 2) identityBar.classList.add("bg-orange-500");
+        else identityBar.classList.add("bg-slate-700");
+      });
+
+      // Cập nhật tên và QUYẾT ĐỊNH HIỂN THỊ GAME HAY LOBBY
+      socket.on("update_names", (names) => {
+        const p1Name = names[1] && names[1] !== "Waiting..." ? names[1] : null;
+        const p2Name = names[2] && names[2] !== "Waiting..." ? names[2] : null;
+
+        p1NameEl.textContent = p1Name || "Waiting...";
+        p2NameEl.textContent = p2Name || "Waiting...";
+
+        // LOGIC CHÍNH: Nếu đủ 2 người -> Hiện bàn cờ. Nếu không -> Hiện Lobby
+        if (p1Name && p2Name) {
+          lobbyEl.classList.add("hidden");
+          gameAreaEl.classList.remove("hidden");
+          gameAreaEl.classList.add("flex"); // Dùng flex để căn giữa
+
+          // Nếu status vẫn đang waiting thì reset lại hiển thị lượt
+          if (
+            statusEl.textContent.includes("Waiting") ||
+            statusEl.textContent.includes("Game Starting")
+          ) {
+            highlightTurn(turn);
+          }
+        } else {
+          lobbyEl.classList.remove("hidden");
+          gameAreaEl.classList.add("hidden");
+          gameAreaEl.classList.remove("flex");
+        }
+      });
+
+      socket.on("room_joined", (data) => {
+        createBoard(data.size);
+        updateBoard(data.board);
+        if (data.turn) {
+          turn = data.turn;
+          // Chỉ highlight nếu game area đang hiện
+          if (!lobbyEl.classList.contains("hidden")) {
+            // logic xử lý ngầm
+          } else {
+            highlightTurn(turn);
+          }
+        }
+      });
+
+      socket.on("spectator", (data) => {
+        playerNumber = 0;
+        boardSize = data.size;
+        createBoard(boardSize);
+        // Spectator vào thì chắc chắn đã đủ người (hoặc game đang chạy)
+        lobbyEl.classList.add("hidden");
+        gameAreaEl.classList.remove("hidden");
+        gameAreaEl.classList.add("flex");
+
+        statusEl.textContent = "Spectating Mode";
+        document.getElementById("rematch-button").classList.add("hidden");
+      });
+
+      socket.on("move_made", (data) => {
+        const { move, player } = data;
+        const cell = document.querySelector(`.cell[data-index='${move}']`);
+        if (cell) {
+          const symbol = player === 1 ? "X" : "O";
+          cell.textContent = symbol;
+          cell.classList.add("disabled", symbol === "X" ? "x-mark" : "o-mark");
+          turn = player === 1 ? 2 : 1;
+          highlightTurn(turn);
+        }
+      });
+
+      socket.on("game_over", (data) => {
+        const winner = data.winner;
+        if (winner === 0) {
+          statusEl.textContent = "🤝 Draw!";
+          statusEl.className =
+            "inline-block px-6 py-2 rounded-full bg-slate-500 text-white font-bold text-sm";
+        } else {
+          const p1Name = p1NameEl.textContent;
+          const p2Name = p2NameEl.textContent;
+          const winnerName = winner === 1 ? p1Name : p2Name;
+
+          statusEl.textContent = `🏆 ${winnerName} Wins!`;
+          statusEl.className = `inline-block px-6 py-2 rounded-full font-bold text-sm text-white ${winner === 1 ? "bg-indigo-600" : "bg-orange-500"}`;
+
+          if (winner === 1) player1Score++;
+          if (winner === 2) player2Score++;
+          updateScores();
+        }
+        document.getElementById("rematch-button").classList.remove("hidden");
+      });
+
+      socket.on("start_rematch", (data) => {
+        createBoard(data.size);
+        turn = 1;
+        highlightTurn(turn);
+        document.getElementById("rematch-button").classList.add("hidden");
+      });
+
+      socket.on("receive_message", (data) => {
+        // Lấy tên hiện tại trên UI để hiển thị chat
+        let name = `Player ${data.player}`;
+        if (data.player === 1) name = p1NameEl.textContent;
+        if (data.player === 2) name = p2NameEl.textContent;
+
+        addMessageToChat(data.player, name, data.message);
+      });
+
+      socket.on("player_disconnected", (data) => {
+        // Khi ai đó thoát, server sẽ gửi update_names với giá trị "Waiting..."
+        // Logic socket.on("update_names") phía trên sẽ tự động chuyển về Lobby
+        // Ta có thể hiện thêm thông báo nhỏ nếu muốn
+      });
+
+      // --- Helper Functions ---
+
+      function createBoard(size) {
+        grid.innerHTML = "";
+        grid.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+        for (let i = 0; i < size * size; i++) {
+          const cell = document.createElement("div");
+          cell.className = "cell";
+          cell.dataset.index = i;
+          grid.appendChild(cell);
+        }
+      }
+
+      function updateBoard(board) {
+        const cells = document.querySelectorAll(".cell");
+        cells.forEach((cell, index) => {
+          if (board[index] !== " ") {
+            cell.textContent = board[index];
+            cell.classList.add("disabled");
+            cell.classList.add(board[index] === "X" ? "x-mark" : "o-mark");
+          }
+        });
+      }
+
+      function highlightTurn(currentTurn) {
+        const p1Card = document.getElementById("p1-card");
+        const p2Card = document.getElementById("p2-card");
+        const p1Name = p1NameEl.textContent;
+        const p2Name = p2NameEl.textContent;
+
+        if (currentTurn === 1) {
+          p1Card.classList.add("ring-2", "ring-indigo-500", "bg-indigo-50");
+          p2Card.classList.remove("ring-2", "ring-orange-500", "bg-orange-50");
+        } else {
+          p1Card.classList.remove("ring-2", "ring-indigo-500", "bg-indigo-50");
+          p2Card.classList.add("ring-2", "ring-orange-500", "bg-orange-50");
+        }
+
+        if (currentTurn === playerNumber) {
+          statusEl.textContent = "👉 Your Turn";
+          statusEl.className =
+            "inline-block px-6 py-1.5 rounded-full bg-green-500 text-white font-bold text-xs animate-pulse";
+        } else {
+          const activeName = currentTurn === 1 ? p1Name : p2Name;
+          statusEl.textContent = `${activeName} is thinking...`;
+          statusEl.className =
+            "inline-block px-6 py-1.5 rounded-full bg-slate-200 text-slate-500 font-bold text-xs";
+        }
+      }
+
+      function updateScores() {
+        document.getElementById("player1-score").textContent = player1Score;
+        document.getElementById("player2-score").textContent = player2Score;
+      }
+
+      function addMessageToChat(playerNum, playerName, message) {
+        const messages = document.getElementById("messages");
+        const div = document.createElement("div");
+        const isMe = playerNum === playerNumber;
+
+        div.className = `flex flex-col ${isMe ? "items-end" : "items-start"}`;
+        div.innerHTML = `
+                <div class="max-w-[85%] px-3 py-2 rounded-xl text-sm shadow-sm ${isMe ? "bg-indigo-600 text-white rounded-br-none" : "bg-white border border-slate-200 text-slate-700 rounded-bl-none"}">
+                    ${message}
+                </div>
+                <span class="text-[10px] text-slate-400 mt-1 px-1">${isMe ? "You" : playerName}</span>
+            `;
+        messages.appendChild(div);
+        messages.scrollTop = messages.scrollHeight;
+      }
+
+      document
+        .getElementById("send-message")
+        .addEventListener("click", sendMessage);
+      document
+        .getElementById("chat-message")
+        .addEventListener("keypress", (e) => {
+          if (e.key === "Enter") sendMessage();
+        });
+
+      function sendMessage() {
+        const input = document.getElementById("chat-message");
+        const message = input.value;
+        if (message.trim() !== "") {
+          socket.emit("chat_message", { room_id: roomId, message });
+          input.value = "";
+        }
+      }
+
+      grid.addEventListener("click", (event) => {
+        const cell = event.target.closest(".cell");
+        if (
+          cell &&
+          turn === playerNumber &&
+          !cell.classList.contains("disabled")
+        ) {
+          socket.emit("make_move", {
+            room_id: roomId,
+            move: cell.dataset.index,
+          });
+        }
+      });
+
+      document.getElementById("leave-room").addEventListener("click", () => {
+        window.location.href = "/";
+      });
+
+      document
+        .getElementById("rematch-button")
+        .addEventListener("click", () => {
+          socket.emit("rematch", { room_id: roomId });
+          statusEl.textContent = "Sent Rematch Request...";
+          document.getElementById("rematch-button").classList.add("hidden");
+        });
+    </script>
+  </body>
+</html>
