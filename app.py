@@ -45,7 +45,7 @@ def get_room_names(room_id):
     }
 
 def check_winner(board, size):
-    # Logic thắng thua
+    # Logic cơ chế thắng thua
     for i in range(size):
         if all(board[i*size + j] == board[i*size] and board[i*size] != ' ' for j in range(size)): return True
         if all(board[j*size + i] == board[i] and board[i] != ' ' for j in range(size)): return True
