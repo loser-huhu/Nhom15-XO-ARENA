@@ -6,7 +6,7 @@ import random
 import gevent
 import os
 
-app = Flask(__name__)
+app = Flask(__name__);
 app.config['SECRET_KEY'] = 'secret!'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///tic_tac_toe.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
