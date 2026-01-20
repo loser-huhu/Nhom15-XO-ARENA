@@ -184,6 +184,7 @@ def handle_move(data):
             if not game_ended and is_bot_room and room.turn == 2:
                 gevent.sleep(0.5) # Bot suy nghĩ
                 
+                # Logic Bot đơn giản (Random): Tìm tất cả các ô trống. Chọn ngẫu nhiên một ô để đánh.
                 bot_move = get_bot_move(room.board, room.size)
                 if bot_move is not None:
                     board_list = list(room.board)
