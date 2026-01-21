@@ -44,6 +44,7 @@ def get_room_names(room_id):
         2: p2.nickname if p2 else "Waiting..."
     }
 
+## Kiểm tra thắng theo hàng, cột và đường chéo
 def check_winner(board, size):
     # Logic cơ chế thắng thua
     for i in range(size):
